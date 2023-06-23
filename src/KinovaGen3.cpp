@@ -11,7 +11,7 @@ KinovaGen3::~KinovaGen3()
 {
 }
 
-Eigen::Transform<double, 3, Eigen::Affine> KinovaGen3::forwardKinematics(const Eigen::Vector<double, 7> q)
+Eigen::Transform<double, 3, Eigen::Affine> KinovaGen3::forwardKinematics(const Eigen::Vector<double, 7>& q)
 {
     Eigen::Vector3d x;
     Eigen::Matrix3d R;
@@ -98,8 +98,8 @@ Eigen::Transform<double, 3, Eigen::Affine> KinovaGen3::forwardKinematics(const E
     return T;
 }
 
-Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<double, 7> q,
-                                                       const Eigen::Vector<double, 6> xp)
+Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<double, 7>& q,
+                                                       const Eigen::Vector<double, 6>& xp)
 {
     Eigen::Vector<double, 7> qp;
     Eigen::Matrix<double, 6, 7> J;
@@ -111,7 +111,7 @@ Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<doubl
     return qp;
 }
 
-Eigen::Matrix<double, 6, 7> KinovaGen3::jacobian(const Eigen::Vector<double, 7> q)
+Eigen::Matrix<double, 6, 7> KinovaGen3::jacobian(const Eigen::Vector<double, 7>& q)
 {
     Eigen::Matrix<double, 6, 7> J;
 
@@ -262,7 +262,7 @@ Eigen::Matrix<double, 6, 7> KinovaGen3::jacobian(const Eigen::Vector<double, 7> 
     return J;
 }
 
-Eigen::Matrix<double, 7, 7> KinovaGen3::massMatrix(const Eigen::Vector<double, 7> q)
+Eigen::Matrix<double, 7, 7> KinovaGen3::massMatrix(const Eigen::Vector<double, 7>& q)
 {
     Eigen::Matrix<double, 7, 7> M;
 
@@ -2378,8 +2378,8 @@ Eigen::Matrix<double, 7, 7> KinovaGen3::massMatrix(const Eigen::Vector<double, 7
     return M;
 }
 
-Eigen::Vector<double, 7> KinovaGen3::coriolis(const Eigen::Vector<double, 7> q,
-                                              const Eigen::Vector<double, 7> qp)
+Eigen::Vector<double, 7> KinovaGen3::coriolis(const Eigen::Vector<double, 7>& q,
+                                              const Eigen::Vector<double, 7>& qp)
 {
     Eigen::Vector<double, 7> C;
 
@@ -3997,7 +3997,7 @@ Eigen::Vector<double, 7> KinovaGen3::coriolis(const Eigen::Vector<double, 7> q,
     return C;
 }
 
-Eigen::Vector<double, 7> KinovaGen3::gravity(const Eigen::Vector<double, 7> q)
+Eigen::Vector<double, 7> KinovaGen3::gravity(const Eigen::Vector<double, 7>& q)
 {
     Eigen::Vector<double, 7> G;
  
