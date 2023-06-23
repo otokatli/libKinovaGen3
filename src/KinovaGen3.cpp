@@ -5,18 +5,18 @@
 
 KinovaGen3::KinovaGen3()
 {
-    std::cout << "Constructor" << std::endl;
 }
 
 KinovaGen3::~KinovaGen3()
 {
-    std::cout << "Destructor" << std::endl;
 }
 
-void KinovaGen3::forwardKinematics(const Eigen::Vector<double, 7> q,
-                                   Eigen::Vector<double, 3> &x,
-                                   Eigen::Matrix<double, 3, 3> &R)
+Eigen::Transform<double, 3, Eigen::Affine> KinovaGen3::forwardKinematics(const Eigen::Vector<double, 7> q)
 {
+    Eigen::Vector3d x;
+    Eigen::Matrix3d R;
+    Eigen::Transform<double, 3, Eigen::Affine> T = Eigen::Transform<double, 3, Eigen::Affine>::Identity();
+
     const double q1 = q(0);
     const double q2 = q(1);
     const double q3 = q(2);
@@ -82,31 +82,39 @@ void KinovaGen3::forwardKinematics(const Eigen::Vector<double, 7> q,
     const double x54 = x17 * x45 + x20 * x42;
 
     x << -0.0118 * x0 - 0.0128 * x11 + 0.3143 * x16 - 0.1674 * x19 - 0.0128 * x2 +
-            0.1674 * x26 + 0.4208 * x5 + 0.3143 * x7,
+          0.1674 * x26 + 0.4208 * x5 + 0.3143 * x7,
          -0.0128 * x14 - 0.4208 * x27 - 0.3143 * x28 + 0.0128 * x29 - 0.0118 * x3 +
-            0.3143 * x31 - 0.1674 * x33 + 0.1674 * x37,
-         0.0128 * x38 + 0.3143 * x39 - 0.3143 * x41 - 0.1674 * x43 + 0.1674 * x46 +
-            0.4208 * x8 + 0.2848;
+          0.3143 * x31 - 0.1674 * x33 + 0.1674 * x37,
+          0.0128 * x38 + 0.3143 * x39 - 0.3143 * x41 - 0.1674 * x43 + 0.1674 * x46 +
+          0.4208 * x8 + 0.2848;
 
     R << -x47 * x48 + x49 * x50, x47 * x50 + x48 * x49, -x19 + x26,
          -x47 * x51 + x49 * x52, x47 * x52 + x49 * x51, -x33 + x37,
          -x47 * x53 + x49 * x54, x47 * x54 + x49 * x53, -x43 + x46;
+
+    T.translate(x);
+    T.rotate(R);
+
+    return T;
 }
 
-void KinovaGen3::inverseKinematics(const Eigen::Vector<double, 7> q,
-                                   const Eigen::Vector<double, 6> xp,
-                                   Eigen::Vector<double, 7> &qp)
+Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<double, 7> q,
+                                                       const Eigen::Vector<double, 6> xp)
+{
+    Eigen::Vector<double, 7> qp;
+    Eigen::Matrix<double, 6, 7> J;
+    J = jacobian(q);
+
+    // Eigen::Matrix<double, 7, 6> Jdagger = J.completeOrthogonalDecomposition().pseudoInverse();
+    // qp = (Jdagger * xp);
+
+    return qp;
+}
+
+Eigen::Matrix<double, 6, 7> KinovaGen3::jacobian(const Eigen::Vector<double, 7> q)
 {
     Eigen::Matrix<double, 6, 7> J;
-    jacobian(q, J);
 
-    Eigen::Matrix<double, 7, 6> Jdagger = J.completeOrthogonalDecomposition().pseudoInverse();
-    qp = (Jdagger * xp);
-}
-
-void KinovaGen3::jacobian(const Eigen::Vector<double, 7> q,
-                          Eigen::Matrix<double, 6, 7> &J)
-{
     const double q1 = q(0);
     const double q2 = q(1);
     const double q3 = q(2);
@@ -250,11 +258,14 @@ void KinovaGen3::jacobian(const Eigen::Vector<double, 7> q,
         x86,
         -x26*x91 - x32*x83,
         x20*x86 - x24*(x26*x83 - x32*x91);
+    
+    return J;
 }
 
-void KinovaGen3::massMatrix(const Eigen::Vector<double, 7> q,
-                            Eigen::Matrix<double, 7, 7> &M)
+Eigen::Matrix<double, 7, 7> KinovaGen3::massMatrix(const Eigen::Vector<double, 7> q)
 {
+    Eigen::Matrix<double, 7, 7> M;
+
     const double q1 = q(0);
     const double q2 = q(1);
     const double q3 = q(2);
@@ -2363,12 +2374,15 @@ void KinovaGen3::massMatrix(const Eigen::Vector<double, 7> q,
             1.6065569e-5 * x344 + 4.415915e-5 * x358 - 0.000655614298 * x363,
         x1244 + 0.000655614298 * x972 - 1.6065569e-5 * x975, x1255,
         0.0006740422825;
+
+    return M;
 }
 
-void KinovaGen3::coriolis(const Eigen::Vector<double, 7> q,
-                          const Eigen::Vector<double, 7> qp,
-                          Eigen::Vector<double, 7> &C)
+Eigen::Vector<double, 7> KinovaGen3::coriolis(const Eigen::Vector<double, 7> q,
+                                              const Eigen::Vector<double, 7> qp)
 {
+    Eigen::Vector<double, 7> C;
+
     const double q1 = q(0);
     const double q2 = q(1);
     const double q3 = q(2);
@@ -3979,210 +3993,213 @@ void KinovaGen3::coriolis(const Eigen::Vector<double, 7> q,
           0.006394896*u2*x711 + x1000*x1505 + x1001*x1008 - x1001*x1076 + x1011*x1020 + x1011*x1080 + x1044*x1503 + x1044*x1545*x353 + x1058*x1504 + x1058*x1545*x355 + x1061*x1514 + x1082*x228 - x1142*x283 - x123*x1554 + x123*(x1503*x376 + x1504*x405 + x1514*x567) + x126*(x146*x701 - x148*x522) + x126*(-x1538*x234 + x1539*x567 + x1543*x77) - 0.00965*x1269 - x129*x1554 + x129*(x1529*x376 + x1530*x405) + x129*(-x1532*x389 + x1533*x376) + x138*x1494 + x138*(x1503*x372 + x1504*x402 - x1537) + x141*x1419 + x141*(-x1540 - x1541 - x1542) - x1412*x172 - x1412*x174 - x1412*x24 - x1412*x28 + x144*x1494 + x144*(x1529*x372 + x1530*x402) + x144*(-x1532*x384 + x1533*x372) - x1494*x328 - x1494*x330 + x1502*x515 + x1514*x615 + x1515*x314 + x1515*x449 + x1522*x516 + x1523*x173 + x1523*x26 + x1528*x516 + x1531*x174 + x1531*x28 + x1534*x174 + x1534*x28 + x1535*x172 + x1535*x24 + x1539*x936 + x1544*x173 + x1544*x26 + x1545*x513 + x1545*x516 - x1545*x695 - x1545*x697 + x1546*x724 + x1546*x732 + x1547*x727 + x1548*x705 + x1548*x716 - x1549*x963 + x1549*x976 + x1550*x858 + x1550*x876 + 0.0008149005*x1551*x224 + 0.031750938*x1551*x238*x3 - x1552*x40 - x1552*x43 - x1553*x341 - x1553*x342 + x228*x812 - x228*x993 + x230*x800 - x283*(x1505*x224 - x1538*x236 + x1539*x583) - x287*(x1505*x237 - x1538*x248 + x1539*x569) - x287*(x147*x701 - x159*x522 - x747 - x748) + x328*(x1503*x620 + x1504*x384 + x1537) + x329*(-x1389 - x1418) + x329*(x1540 + x1541 + x1542) + x330*(x1529*x620 + x1530*x384) + x330*(-x1532*x402 + x1533*x620) - 6.031665975e-5*x334 + 6.031665975e-5*x335 + 6.031665975e-5*x336 + x341*(-x146*x1536 + x1503*x366 + x1504*x395) + x342*(x1529*x366 + x1530*x395) + x342*(-x1532*x359 + x1533*x366) + x343*(-x277 + x279) + x343*(-x146*x1506 - x146*x1507 + x1543) + x40*(x1503*x537 + x1504*x543 + x1514*x590) + x42*(x1505*x151 - x1538*x262 + x1539*x590) + x42*(-x1138 - x1139 + x1140 - x999) + x43*(x1529*x537 + x1530*x543) + x43*(-x1532*x538 + x1533*x537) + 0.006394896*x444*x722 - x460*(x1529*x456 + x1530*x464) - x460*(-x1532*x459 + x1533*x456) - x465*(x1529*x378 + x1530*x407) - x465*(-x1532*x391 + x1533*x378) - 0.006394896*x482*x718 + 6.78e-7*x482*x735 - 0.000408525141168*x490 + 0.000408525141168*x491 + 0.000408525141168*x492 + x494*(x1508*x228 - x1509*x228 - x1536) + x496*(-x1506 - x1507) - 4.3312674e-8*x503 + 4.3312674e-8*x504 - 4.3312674e-8*x505 + x513*(x1510 + x1511) + x635*(x1508 - x1509) + x664 + x695*(-x1510 - x1511) + x697*(-x1518 - x1521) + x697*(-x1525 - x1527) - x699*(x1503*x456 + x1504*x464 + x1514*x583) - 6.78e-7*x736 - x738*(x1503*x378 + x1504*x407 + x1514*x569),
           0.1509075*u1*x626 + 0.1509075*u2*x488 + 0.030837474*u3*x888 + 6.78e-7*u3*x930 + x1008*x355 - x1020*x353 + 0.135698*x1044*x355 - 0.135698*x1058*x353 + x1061*x1557 - x1076*x355 - x1080*x353 - x1131*x252 - x1183*x283 + x1213*x40 + x1213*x43 + x1220*x42 + x123*x1567 + x123*(x1557*x567 + x1568*x376 - x1569*x405) + x126*(-x1389*x240 - 0.045483*x231 + x232*x891 - 1.0e-6*x241) + x129*x1567 + x129*(x1561*x376 - x1562*x405) + x129*(x1564*x389 + x1565*x376) + x1354*x172 + x1354*x174 + x1354*x24 + x1354*x28 + x138*x1496 + x138*(x1568*x372 - x1569*x402 - x1572) + x1407*x173 + x1407*x26 + x141*x1472 + x144*x1496 + x144*(x1561*x372 - x1562*x402) + x144*(x1564*x384 + x1565*x372) + x1471*x329 + x1495*x341 + x1495*x342 - x1496*x328 - x1496*x330 + x1502*x318 + x1502*x451 + x1522*x316 + x1522*x452 + x1528*x316 + x1528*x452 + x1545*x314 + x1545*x316 + x1545*x449 + x1545*x452 + x1546*x924 + x1546*x925 + x1547*x750 + x1547*x928 + x1557*x615 + x1560*x314 + x1560*x449 + x1563*x174 + x1563*x28 + x1566*x174 + x1566*x28 + x1570*x172 + x1570*x24 + x1573*x494 + x1573*x502 + x1574*x894 + x1574*x912 + x1575*x881 + x1575*x905 + x1576*x858 + x1576*x876 + x1577*x963 - x1577*x976 - x256*(-0.1059*x246 + 0.1059*x247) - x287*(0.045483*x247 + 1.0e-6*x568 - x996 + x998) + x328*(x1568*x620 - x1569*x384 + x1572) + x330*(x1561*x620 - x1562*x384) + x330*(x1564*x402 + x1565*x620) + x341*(-x146*x1571 + x1568*x366 - x1569*x395) + x342*(x1561*x366 - x1562*x395) + x342*(x1564*x359 + x1565*x366) + x343*(-x1389*x230 + x228*x891) + x40*(x1557*x590 + x1568*x537 - x1569*x543) + x43*(x1561*x537 - x1562*x543) + x43*(x1564*x538 + x1565*x537) - x460*(x1561*x456 - x1562*x464) - x460*(x1564*x459 + x1565*x456) - x465*(x1561*x378 - x1562*x407) - x465*(x1564*x391 + x1565*x378) - 0.01738368508062*x490 + 0.01738368508062*x491 + 0.01738368508062*x492 + x494*(x1558*x228 + x1559*x228 - x1571) + x496*(-x916 + x917) + x502*(x1517*x228 + x1520*x228) + x502*(x1524*x228 + x1526*x228) + 6.78e-7*x600*x933 - 6.78e-7*x610*x918 + 0.1509075*x611*x633 + x635*(x1558 + x1559) + x637*(x1517 + x1520) + x637*(x1524 + x1526) + 6.5427e-9*x673 - 6.5427e-9*x674 + 6.5427e-9*x675 - x699*(x1557*x583 + x1568*x456 - x1569*x464) - x738*(x1557*x569 + x1568*x378 - x1569*x407) + x813 + 0.0002975816241*x877 - 0.0002975816241*x878 - 0.0002975816241*x879 - 0.030837474*x915 + 0.030837474*x919,
           0.005701*u4*x1025 - 0.0001405*u4*x1047 + x1021*x1582 + x1030*x1581 + x1032*x1582 + x1033*x1580 + x1034*x1581 + x1035*x1580 - 0.005701*x1038*x870 + 0.0001405*x1042*x772 + 0.005701*x1042*x786 - x1045*x1585 - x1049*x1584 - x1051*x1585 - x1052*x1583 - x1053*x1584 - x1054*x1583 - 0.0001405*x1057*x870 + x1081 - x1227*x699 + x123*(-x1040*x231 - x1041*x231 + 0.011402*x375 - 0.000281*x404) + x138*x1451 + x1557*x513 + x1578*x314 + x1578*x449 + x1579*x172 + x1579*x24 + x328*(-x1447 + x1448 - x1449 - x1450) + x341*(x1028*x364 + x1048*x357 + 0.000281*x356 - 0.011402*x363) + x40*(-x1223 + x1224 - x1225 + x1226) + x494*(x1028*x355 + x1048*x353) + x635*(x1040 + x1041) + x695*(-x1555 + x1556) - x738*(-0.011402*x373 + 0.011402*x377 + 0.000281*x403 - 0.000281*x406) + 0.001859*x803 - 0.001859*x806 - 0.001859*x808 - 0.001859*x809 - 0.001859*x810 - 0.000169878398*x815 + 0.000169878398*x816 + 0.000169878398*x817 - 6.50422825e-5*x877 + 6.50422825e-5*x878 + 6.50422825e-5*x879 + 4.186619e-6*x939 - 4.186619e-6*x940 + 4.186619e-6*x941 + x986 - x987 - x988 + x990 - x992;
+
+    return C;
 }
 
-void KinovaGen3::gravity(const Eigen::Vector<double, 7> q,
-                         Eigen::Vector<double, 7>& G)
+Eigen::Vector<double, 7> KinovaGen3::gravity(const Eigen::Vector<double, 7> q)
 {
+    Eigen::Vector<double, 7> G;
+ 
     // Graviatational acceleration constant
-    const float g = 9.80665;
+    const double g = 9.80665;
 
-    const float q1 = q(0);
-    const float q2 = q(1);
-    const float q3 = q(2);
-    const float q4 = q(3);
-    const float q5 = q(4);
-    const float q6 = q(5);
-    const float q7 = q(6);
+    const double q1 = q(0);
+    const double q2 = q(1);
+    const double q3 = q(2);
+    const double q4 = q(3);
+    const double q5 = q(4);
+    const double q6 = q(5);
+    const double q7 = q(6);
 
-    const float x0 = std::sin(q1);
-    const float x1 = std::cos(q1);
-    const float x2 = std::sin(q2);
-    const float x3 = x2*x2;
-    const float x4 = 0.0466477208*x1;
-    const float x5 = std::cos(q2);
-    const float x6 = std::cos(q3);
-    const float x7 = 4.4e-5*x5;
-    const float x8 = std::sin(q3);
-    const float x9 = x2*x8;
-    const float x10 = x2*x6;
-    const float x11 = x1*x2;
-    const float x12 = 1.1636*x11;
-    const float x13 = x0*x6;
-    const float x14 = x1*x5;
-    const float x15 = x14*x8;
-    const float x16 = -x13 - x15;
-    const float x17 = x0*x8;
-    const float x18 = x14*x6;
-    const float x19 = -x17 + x18;
-    const float x20 = 0.0064*x5;
-    const float x21 = x13 + x15;
-    const float x22 = std::sin(q4);
-    const float x23 = x22*x5;
-    const float x24 = 0.2084*x6;
-    const float x25 = std::cos(q4);
-    const float x26 = x2*x25;
-    const float x27 = x25*x6;
-    const float x28 = x2*x27;
-    const float x29 = x11*x25;
-    const float x30 = x19*x22;
-    const float x31 = -x29 - x30;
-    const float x32 = 0.075478*x22;
-    const float x33 = 1.8e-5*x25;
-    const float x34 = 1.8e-5*x6;
-    const float x35 = 0.075478*x6;
-    const float x36 = 0.93*x21;
-    const float x37 = 0.015006*x25;
-    const float x38 = x10*x22;
-    const float x39 = x11*x22;
-    const float x40 = x19*x25;
-    const float x41 = -x39 + x40;
-    const float x42 = 0.93*x41;
-    const float x43 = 2.781*x41;
-    const float x44 = 0.93*x31;
-    const float x45 = std::cos(q5);
-    const float x46 = 0.1059*x23;
-    const float x47 = std::sin(q5);
-    const float x48 = x47*x8;
-    const float x49 = x27*x45 - x48;
-    const float x50 = 0.1059*x2;
-    const float x51 = x21*x45;
-    const float x52 = x41*x47;
-    const float x53 = -x51 - x52;
-    const float x54 = 2.103*x53;
-    const float x55 = x46*x47;
-    const float x56 = x45*x8;
-    const float x57 = x27*x47;
-    const float x58 = -x56 - x57;
-    const float x59 = x21*x47;
-    const float x60 = x41*x45;
-    const float x61 = -x59 + x60;
-    const float x62 = 2.103*x61;
-    const float x63 = x23*x47;
-    const float x64 = 1.0e-6*x63;
-    const float x65 = x23*x45;
-    const float x66 = 1.0e-6*x2;
-    const float x67 = 0.678*x31;
-    const float x68 = 1.0e-6*x25;
-    const float x69 = 0.063883*x2;
-    const float x70 = 0.678*x53;
-    const float x71 = 0.009432*x25;
-    const float x72 = 0.009432*x22;
-    const float x73 = 0.678*x61;
-    const float x74 = std::sin(q6);
-    const float x75 = x25*x74;
-    const float x76 = std::cos(q6);
-    const float x77 = x22*x76;
-    const float x78 = x45*x77;
-    const float x79 = x5*(x75 + x78);
-    const float x80 = x22*x74;
-    const float x81 = x25*x76;
-    const float x82 = x45*x81 - x80;
-    const float x83 = -x48*x76 + x6*x82;
-    const float x84 = x51 + x52;
-    const float x85 = 1.425*x84;
-    const float x86 = x56 + x57;
-    const float x87 = x31*x74;
-    const float x88 = x61*x76;
-    const float x89 = x87 + x88;
-    const float x90 = 1.425*x89;
-    const float x91 = x45*x80;
-    const float x92 = x81 - x91;
-    const float x93 = x5*x92;
-    const float x94 = 0.045483*x2;
-    const float x95 = -x45*x75 - x77;
-    const float x96 = x48*x74 + x6*x95;
-    const float x97 = x2*x96;
-    const float x98 = 0.678*x84;
-    const float x99 = x31*x76;
-    const float x100 = x61*x74;
-    const float x101 = -x100 + x99;
-    const float x102 = 0.678*x101;
-    const float x103 = 0.678*x89;
-    const float x104 = std::cos(q7);
-    const float x105 = x104*x75;
-    const float x106 = std::sin(q7);
-    const float x107 = x106*x47;
-    const float x108 = x104*x45;
-    const float x109 = -x107 + x108*x76;
-    const float x110 = x109*x22;
-    const float x111 = x105 + x110;
-    const float x112 = x111*x5;
-    const float x113 = x106*x45;
-    const float x114 = x104*x47;
-    const float x115 = x114*x76;
-    const float x116 = x113 + x115;
-    const float x117 = -x104*x80 + x109*x25;
-    const float x118 = -x116*x8 + x117*x6;
-    const float x119 = x118*x2;
-    const float x120 = x104*x84;
-    const float x121 = x106*x89;
-    const float x122 = x120 + x121;
-    const float x123 = 0.925*x122;
-    const float x124 = x106*x75;
-    const float x125 = x113*x76;
-    const float x126 = x114 + x125;
-    const float x127 = x126*x22;
-    const float x128 = x107*x76;
-    const float x129 = -x108 + x128;
-    const float x130 = x106*x80;
-    const float x131 = x126*x25 - x130;
-    const float x132 = x106*x84;
-    const float x133 = x104*x89;
-    const float x134 = -x132 + x133;
-    const float x135 = 0.925*x134;
-    const float x136 = -x120 - x121;
-    const float x137 = 0.925*x136;
-    const float x138 = -x114 - x125;
-    const float x139 = x138*x22;
-    const float x140 = x5*(-x124 + x139);
-    const float x141 = x108 - x128;
-    const float x142 = x130 + x138*x25;
-    const float x143 = x2*(-x141*x8 + x142*x6);
-    const float x144 = 0.011402*x5;
-    const float x145 = 0.011402*x2;
-    const float x146 = 0.5*x101;
-    const float x147 = 0.5*x136;
-    const float x148 = 0.5*x134;
-    const float x149 = x25*x8;
-    const float x150 = 0.5795604*x21;
-    const float x151 = x22*x8;
-    const float x152 = 0.009432*x47;
-    const float x153 = 1.0e-6*x45;
-    const float x154 = x153*x6 - x48*x68;
-    const float x155 = 0.1059*x6;
-    const float x156 = 0.1059*x25;
-    const float x157 = x155*x45 - x156*x48;
-    const float x158 = x155*x47;
-    const float x159 = 0.063883*x6;
-    const float x160 = x25*x48;
-    const float x161 = x8*x82;
-    const float x162 = x47*x74;
-    const float x163 = 1.0e-6*x162;
-    const float x164 = x47*x76;
-    const float x165 = 0.045483*x164;
-    const float x166 = x8*x95;
-    const float x167 = 0.00965*x164;
-    const float x168 = 0.045483*x45;
-    const float x169 = 0.00965*x162;
-    const float x170 = x116*x6;
-    const float x171 = x141*x6;
-    const float x172 = 0.011402*x8;
-    const float x173 = x142*x8;
-    const float x174 = x117*x8;
-    const float x175 = 0.000281*x162;
-    const float x176 = 0.011402*x162;
-    const float x177 = x22*x47;
-    const float x178 = 1.0e-6*x177;
-    const float x179 = 0.063883*x22;
-    const float x180 = 0.1509075*x89;
-    const float x181 = 0.1509075*x84;
-    const float x182 = 0.000281*x76;
-    const float x183 = 0.011402*x76;
-    const float x184 = x106*x74;
-    const float x185 = x104*x74;
-    const float x186 = 0.05365*x122;
-    const float x187 = 0.029798*x74;
+    const double x0 = std::sin(q1);
+    const double x1 = std::cos(q1);
+    const double x2 = std::sin(q2);
+    const double x3 = x2*x2;
+    const double x4 = 0.0466477208*x1;
+    const double x5 = std::cos(q2);
+    const double x6 = std::cos(q3);
+    const double x7 = 4.4e-5*x5;
+    const double x8 = std::sin(q3);
+    const double x9 = x2*x8;
+    const double x10 = x2*x6;
+    const double x11 = x1*x2;
+    const double x12 = 1.1636*x11;
+    const double x13 = x0*x6;
+    const double x14 = x1*x5;
+    const double x15 = x14*x8;
+    const double x16 = -x13 - x15;
+    const double x17 = x0*x8;
+    const double x18 = x14*x6;
+    const double x19 = -x17 + x18;
+    const double x20 = 0.0064*x5;
+    const double x21 = x13 + x15;
+    const double x22 = std::sin(q4);
+    const double x23 = x22*x5;
+    const double x24 = 0.2084*x6;
+    const double x25 = std::cos(q4);
+    const double x26 = x2*x25;
+    const double x27 = x25*x6;
+    const double x28 = x2*x27;
+    const double x29 = x11*x25;
+    const double x30 = x19*x22;
+    const double x31 = -x29 - x30;
+    const double x32 = 0.075478*x22;
+    const double x33 = 1.8e-5*x25;
+    const double x34 = 1.8e-5*x6;
+    const double x35 = 0.075478*x6;
+    const double x36 = 0.93*x21;
+    const double x37 = 0.015006*x25;
+    const double x38 = x10*x22;
+    const double x39 = x11*x22;
+    const double x40 = x19*x25;
+    const double x41 = -x39 + x40;
+    const double x42 = 0.93*x41;
+    const double x43 = 2.781*x41;
+    const double x44 = 0.93*x31;
+    const double x45 = std::cos(q5);
+    const double x46 = 0.1059*x23;
+    const double x47 = std::sin(q5);
+    const double x48 = x47*x8;
+    const double x49 = x27*x45 - x48;
+    const double x50 = 0.1059*x2;
+    const double x51 = x21*x45;
+    const double x52 = x41*x47;
+    const double x53 = -x51 - x52;
+    const double x54 = 2.103*x53;
+    const double x55 = x46*x47;
+    const double x56 = x45*x8;
+    const double x57 = x27*x47;
+    const double x58 = -x56 - x57;
+    const double x59 = x21*x47;
+    const double x60 = x41*x45;
+    const double x61 = -x59 + x60;
+    const double x62 = 2.103*x61;
+    const double x63 = x23*x47;
+    const double x64 = 1.0e-6*x63;
+    const double x65 = x23*x45;
+    const double x66 = 1.0e-6*x2;
+    const double x67 = 0.678*x31;
+    const double x68 = 1.0e-6*x25;
+    const double x69 = 0.063883*x2;
+    const double x70 = 0.678*x53;
+    const double x71 = 0.009432*x25;
+    const double x72 = 0.009432*x22;
+    const double x73 = 0.678*x61;
+    const double x74 = std::sin(q6);
+    const double x75 = x25*x74;
+    const double x76 = std::cos(q6);
+    const double x77 = x22*x76;
+    const double x78 = x45*x77;
+    const double x79 = x5*(x75 + x78);
+    const double x80 = x22*x74;
+    const double x81 = x25*x76;
+    const double x82 = x45*x81 - x80;
+    const double x83 = -x48*x76 + x6*x82;
+    const double x84 = x51 + x52;
+    const double x85 = 1.425*x84;
+    const double x86 = x56 + x57;
+    const double x87 = x31*x74;
+    const double x88 = x61*x76;
+    const double x89 = x87 + x88;
+    const double x90 = 1.425*x89;
+    const double x91 = x45*x80;
+    const double x92 = x81 - x91;
+    const double x93 = x5*x92;
+    const double x94 = 0.045483*x2;
+    const double x95 = -x45*x75 - x77;
+    const double x96 = x48*x74 + x6*x95;
+    const double x97 = x2*x96;
+    const double x98 = 0.678*x84;
+    const double x99 = x31*x76;
+    const double x100 = x61*x74;
+    const double x101 = -x100 + x99;
+    const double x102 = 0.678*x101;
+    const double x103 = 0.678*x89;
+    const double x104 = std::cos(q7);
+    const double x105 = x104*x75;
+    const double x106 = std::sin(q7);
+    const double x107 = x106*x47;
+    const double x108 = x104*x45;
+    const double x109 = -x107 + x108*x76;
+    const double x110 = x109*x22;
+    const double x111 = x105 + x110;
+    const double x112 = x111*x5;
+    const double x113 = x106*x45;
+    const double x114 = x104*x47;
+    const double x115 = x114*x76;
+    const double x116 = x113 + x115;
+    const double x117 = -x104*x80 + x109*x25;
+    const double x118 = -x116*x8 + x117*x6;
+    const double x119 = x118*x2;
+    const double x120 = x104*x84;
+    const double x121 = x106*x89;
+    const double x122 = x120 + x121;
+    const double x123 = 0.925*x122;
+    const double x124 = x106*x75;
+    const double x125 = x113*x76;
+    const double x126 = x114 + x125;
+    const double x127 = x126*x22;
+    const double x128 = x107*x76;
+    const double x129 = -x108 + x128;
+    const double x130 = x106*x80;
+    const double x131 = x126*x25 - x130;
+    const double x132 = x106*x84;
+    const double x133 = x104*x89;
+    const double x134 = -x132 + x133;
+    const double x135 = 0.925*x134;
+    const double x136 = -x120 - x121;
+    const double x137 = 0.925*x136;
+    const double x138 = -x114 - x125;
+    const double x139 = x138*x22;
+    const double x140 = x5*(-x124 + x139);
+    const double x141 = x108 - x128;
+    const double x142 = x130 + x138*x25;
+    const double x143 = x2*(-x141*x8 + x142*x6);
+    const double x144 = 0.011402*x5;
+    const double x145 = 0.011402*x2;
+    const double x146 = 0.5*x101;
+    const double x147 = 0.5*x136;
+    const double x148 = 0.5*x134;
+    const double x149 = x25*x8;
+    const double x150 = 0.5795604*x21;
+    const double x151 = x22*x8;
+    const double x152 = 0.009432*x47;
+    const double x153 = 1.0e-6*x45;
+    const double x154 = x153*x6 - x48*x68;
+    const double x155 = 0.1059*x6;
+    const double x156 = 0.1059*x25;
+    const double x157 = x155*x45 - x156*x48;
+    const double x158 = x155*x47;
+    const double x159 = 0.063883*x6;
+    const double x160 = x25*x48;
+    const double x161 = x8*x82;
+    const double x162 = x47*x74;
+    const double x163 = 1.0e-6*x162;
+    const double x164 = x47*x76;
+    const double x165 = 0.045483*x164;
+    const double x166 = x8*x95;
+    const double x167 = 0.00965*x164;
+    const double x168 = 0.045483*x45;
+    const double x169 = 0.00965*x162;
+    const double x170 = x116*x6;
+    const double x171 = x141*x6;
+    const double x172 = 0.011402*x8;
+    const double x173 = x142*x8;
+    const double x174 = x117*x8;
+    const double x175 = 0.000281*x162;
+    const double x176 = 0.011402*x162;
+    const double x177 = x22*x47;
+    const double x178 = 1.0e-6*x177;
+    const double x179 = 0.063883*x22;
+    const double x180 = 0.1509075*x89;
+    const double x181 = 0.1509075*x84;
+    const double x182 = 0.000281*x76;
+    const double x183 = 0.011402*x76;
+    const double x184 = x106*x74;
+    const double x185 = x104*x74;
+    const double x186 = 0.05365*x122;
+    const double x187 = 0.029798*x74;
 
     G << g*(1.02561584*x0*x2 - 1.1636*x0*(-0.09958*x2 + x7) - 3.1671e-5*x0 + 0.0237504*x1*x3*x6 + 0.018335052*x1 - 0.7807944*x10*x16 - x102*(0.00965*x2*x83 + x64 + x66*x86 + 0.00965*x79) - x103*(0.045483*x63 + x86*x94 - 0.00965*x93 - 0.00965*x97) + x12*(-0.006641*x10 - 4.4e-5*x9) - x123*(-0.058*x112 - 0.058*x119) - x135*(-0.0615*x140 - 0.0615*x143) - x135*(0.058*x2*(-x129*x8 + x131*x6) + 0.058*x5*(x124 + x127)) - x137*(0.0615*x112 + 0.0615*x119) - x146*(-x111*x144 - x118*x145 + 0.000281*x140 + 0.000281*x143) - x147*(0.029798*x112 + 0.029798*x119 - 0.000281*x93 - 0.000281*x97) - x148*(-0.029798*x140 - 0.029798*x143 + x144*x92 + x145*x96) - 1.1636*x16*(0.117892*x10 - x7) - 3.711*x19*(-x20 + 0.2104*x9) - 1.1636*x19*(0.006641*x5 + 0.117892*x9) - 2.781*x21*(-0.2084*x23 - x24*x26) + x3*x4 - 2.781*x31*(x20*x22 + 0.0064*x28) - x36*(-x2*x22*x34 - x26*x35 - x32*x5 + x33*x5) + x4*x5*x5 - x42*(-x37*x5 + 0.015006*x38 + 0.075478*x9) - x43*(-x20*x25 + 0.0064*x38 + 0.2084*x9) - x44*(0.015006*x23 + 0.015006*x28 - 1.8e-5*x9) - x54*(x45*x46 + x49*x50) - x62*(-x50*x58 + x55) - x67*(-0.009432*x2*x49 - x58*x66 + x64 - 0.009432*x65) - x70*(-1.0e-6*x38 + x49*x69 + x5*x68 + 0.063883*x65) - x73*(-x10*x72 + x5*x71 - x58*x69 + 0.063883*x63) - x85*(-x50*x83 - 0.1059*x79) - x90*(x50*x86 + x55) - x98*(-0.045483*x79 - x83*x94 - 1.0e-6*x93 - 1.0e-6*x97)),
          g*(-x102*(x154 - 0.00965*x161 - x167*x6) - x103*(-0.045483*x160 + 0.00965*x166 + x168*x6 - x169*x6) - 0.0237504*x11*x8 - 5.11984e-5*x11 + x12*(-4.4e-5*x6 + 0.006641*x8) - x123*(0.058*x170 + 0.058*x174) - x135*(0.0615*x171 + 0.0615*x173) - x135*(-0.058*x129*x6 - 0.058*x131*x8) - x137*(-0.0615*x170 - 0.0615*x174) - 1.141487128*x14 - x146*(x117*x172 + 0.011402*x170 - 0.000281*x171 - 0.000281*x173) - x147*(0.000281*x166 - 0.029798*x170 - 0.029798*x174 - x175*x6) - x148*(0.029798*x171 - x172*x95 + 0.029798*x173 + x176*x6) - x149*x150 + 0.0177984*x149*x31 - x157*x62 - x157*x90 + 0.9179735312*x16*x8 - 0.9179735312*x19*x6 - x36*(0.075478*x149 + 1.8e-5*x151) - x42*(-0.015006*x151 + x35) - x43*(-0.0064*x151 + x24) - x44*(-x34 - x37*x8) - x54*(-x156*x56 - x158) - x67*(x152*x6 + x154 + x56*x71) - x70*(1.0e-6*x151 - x159*x47 - 0.063883*x25*x56) - x73*(0.009432*x151 + x159*x45 - 0.063883*x160) - x85*(x158*x76 + 0.1059*x161) - x98*(0.045483*x161 - x163*x6 + x165*x6 + 1.0e-6*x166)),
@@ -4191,4 +4208,6 @@ void KinovaGen3::gravity(const Eigen::Vector<double, 7> q,
          g*(-0.0065427*x101*x74 - 0.1105375*x134*x184 - 0.0568875*x136*x185 - x146*(-0.000281*x184 - 0.011402*x185) - x147*(x104*x187 - x182) - x148*(x106*x187 + x183) + x181*x74 + x185*x186 + 6.78e-7*x51 + 6.78e-7*x52 + 0.006394896*x59 - 0.006394896*x60 + 0.0065427*x76*x89 - x98*(-0.045483*x74 - 1.0e-6*x76)),
          g*(6.78e-7*x100 - 0.1254365*x104*x134 + 0.0717865*x106*x136 - x106*x186 - x146*(-0.000281*x104 + 0.011402*x106) - 0.181744974*x87 - 0.181744974*x88 - 6.78e-7*x99),
          g*(-0.0001405*x120 - 0.0001405*x121 + 0.005701*x132 - 0.005701*x133);
+
+    return G;
 }

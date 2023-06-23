@@ -2,7 +2,6 @@
 #include <Eigen/Dense>
 #include <iostream>
 
-
 int main()
 {
     KinovaGen3 robot;
@@ -10,34 +9,33 @@ int main()
     Eigen::Vector<double, 7> q0(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     Eigen::Vector<double, 7> qp0(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
-    Eigen::Vector<double, 3> x;
-    Eigen::Matrix<double, 3, 3> R;
+    Eigen::Transform<double, 3, Eigen::Affine> T;
     Eigen::Matrix<double, 6, 7> J;
     Eigen::Matrix<double, 7, 7> M;
     Eigen::Vector<double, 7> C;
     Eigen::Vector<double, 7> G;
 
-    robot.forwardKinematics(q0, x, R);
+    T = robot.forwardKinematics(q0);
     std::cout << "End effector position:" << std::endl;
-    std::cout << x << std::endl;
+    std::cout << T.translation() << std::endl;
     std::cout << "End effector orientation:" << std::endl;
-    std::cout << R << std::endl;
+    std::cout << T.rotation() << std::endl;
 
-    robot.inverseKinematics();
+    // robot.inverseKinematics();
 
-    robot.jacobian(q0, J);
+    J = robot.jacobian(q0);
     std::cout << "Jacobian:" << std::endl;
     std::cout << J << std::endl;
 
-    robot.massMatrix(q0, M);
+    M = robot.massMatrix(q0);
     std::cout << "Mass matrix:" << std::endl;
     std::cout << M << std::endl;
     
-    robot.coriolis(q0, qp0, C);
+    C = robot.coriolis(q0, qp0);
     std::cout << "Coriolis:" << std::endl;
     std::cout << C << std::endl;
 
-    robot.gravity(q0, G);
+    G = robot.gravity(q0);
     std::cout << "Gravity:" << std::endl;
     std::cout << G << std::endl;
 
