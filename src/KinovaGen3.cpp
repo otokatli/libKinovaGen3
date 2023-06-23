@@ -102,11 +102,9 @@ Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<doubl
                                                        const Eigen::Vector<double, 6>& xp)
 {
     Eigen::Vector<double, 7> qp;
-    Eigen::Matrix<double, 6, 7> J;
-    J = jacobian(q);
 
-    // Eigen::Matrix<double, 7, 6> Jdagger = J.completeOrthogonalDecomposition().pseudoInverse();
-    // qp = (Jdagger * xp);
+    Eigen::Matrix<double, 7, 6> Jdagger = jacobian(q).completeOrthogonalDecomposition().pseudoInverse();
+    qp = (Jdagger * xp);
 
     return qp;
 }
