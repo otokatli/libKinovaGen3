@@ -8,6 +8,7 @@ class KinovaGen3
 {
 public:
     KinovaGen3();
+    KinovaGen3(double xg, double yg, double zg);
     ~KinovaGen3();
 
     /**
@@ -61,6 +62,11 @@ public:
      * @return The gravity term of the robot evaluated at q
     */
     Eigen::Vector<double, 7> gravity(const Eigen::Vector<double, 7>& q);
+
+    // Unit vector in the direction of gravity
+    double xg;
+    double yg;
+    double zg;
 };
 
 #endif // KINOVA_GEN_3_H_

@@ -2,8 +2,13 @@
 #include <iostream>
 #include <cmath>
 
+KinovaGen3::KinovaGen3() :
+	xg{0.0}, yg(0.0), zg(-1.0)
+{
+}
 
-KinovaGen3::KinovaGen3()
+KinovaGen3::KinovaGen3(double xg, double yg, double zg) :
+	xg{xg}, yg(yg), zg(zg)
 {
 }
 
@@ -2455,9 +2460,9 @@ Eigen::Vector<double, 7> KinovaGen3::gravity(const Eigen::Vector<double, 7>& q)
 	const double g{ 9.80665 };
 
 	// Unit vector in the gravity direction
-	const double xg{ 1.0 };
-	const double yg{ 0.0 };
-	const double zg{ 0.0 };
+	// const double xg{ 1.0 };
+	// const double yg{ 0.0 };
+	// const double zg{ 0.0 };
 
 	const double q1 = q(0);
 	const double q2 = q(1);

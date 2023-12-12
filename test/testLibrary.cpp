@@ -4,7 +4,7 @@
 
 int main()
 {
-    KinovaGen3 robot;
+    KinovaGen3 robot(1.0, 0.0, 0.0);
 
     Eigen::Vector<double, 7> q0(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     Eigen::Vector<double, 7> qp0(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
