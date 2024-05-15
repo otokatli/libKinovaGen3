@@ -8,7 +8,6 @@ class KinovaGen3
 {
 public:
     KinovaGen3();
-    KinovaGen3(double xg, double yg, double zg);
     ~KinovaGen3();
 
     /**
@@ -38,6 +37,17 @@ public:
     Eigen::Matrix<double, 6, 7> jacobian(const Eigen::Vector<double, 7>& q);
 
     /**
+     * Calculate the time derivative of the Jacobian of the Kinova Gen3 robot
+     * 
+     * @param q Joint positions of the robot
+     * @param qp Joint velocities of the robot
+     * @return The time derivative of the Jacobian of the robot evaluated at q
+     * and qp
+    */
+    Eigen::Matrix<double, 6, 7> jacobianDot(const Eigen::Vector<double, 7>& q,
+                                            const Eigen::Vector<double, 7>& qp);
+
+    /**
      * Calculate the mass matrix of the Kinova Gen3 robot
      * 
      * @param q Joint positions of the robot
@@ -62,11 +72,6 @@ public:
      * @return The gravity term of the robot evaluated at q
     */
     Eigen::Vector<double, 7> gravity(const Eigen::Vector<double, 7>& q);
-
-    // Unit vector in the direction of gravity
-    double xg;
-    double yg;
-    double zg;
 };
 
 #endif // KINOVA_GEN_3_H_
