@@ -96,12 +96,12 @@ Eigen::Transform<double, 3, Eigen::Affine> KinovaGen3::forwardKinematics(const E
 	return T;
 }
 
-// Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<double, 7>& q,
-//                                                        const Eigen::Vector<double, 6>& xp)
-// {
-//
-// }
-//
+Eigen::Vector<double, 7> KinovaGen3::inverseKinematics(const Eigen::Vector<double, 7>& q,
+                                                       const Eigen::Vector<double, 6>& xp)
+{
+	return jacobian(q).completeOrthogonalDecomposition().pseudoInverse() * xp;
+}
+
 Eigen::Matrix<double, 6, 7> KinovaGen3::jacobian(const Eigen::Vector<double, 7>& q)
 {
 	Eigen::Matrix<double, 6, 7> J;
